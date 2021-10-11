@@ -1,12 +1,16 @@
+use crate::lib::dns_query_parser::answer::Answer;
+
 use super::{
+    answer::Answers,
     header::Header,
     question::{Question, Questions},
 };
 
 #[derive(Debug)]
 pub struct DnsMessage {
-    header: Header,
-    questions: Questions,
+    pub header: Header,
+    pub questions: Questions,
+    pub answers: Answers,
 }
 
 pub struct Parser;
@@ -30,13 +34,21 @@ impl Parser {
         // where the questions ended. We would then start from there to parse the answers given by
         // a nameserver.
         let (_offset, questions) = Parser::parse_questions(&buf[12..], header.question_count);
-        DnsMessage { header, questions }
+        DnsMessage {
+            header,
+            questions,
+            answers: vec![],
+        }
     }
 
     pub fn compose(msg: DnsMessage) -> Vec<u8> {
         let mut composed = vec![];
         let mut header = Header::compose(msg.header);
         composed.append(&mut header);
+        let mut questions = Question::compose(msg.questions);
+        composed.append(&mut questions);
+        let mut answers = Answer::compose(msg.answers);
+        composed.append(&mut answers);
         composed
     }
 }

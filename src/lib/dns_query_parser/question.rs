@@ -2,9 +2,9 @@ use byteorder::{BigEndian, ByteOrder};
 
 #[derive(Debug)]
 pub struct Question {
-    name: String,
-    qtype: u16,
-    qclass: u16,
+    pub name: String,
+    pub qtype: u16,
+    pub qclass: u16,
 }
 
 pub type Questions = Vec<Question>;
@@ -44,5 +44,30 @@ impl Question {
             })
         }
         (remainder_offset, questions)
+    }
+
+    pub fn compose(questions: Questions) -> Vec<u8> {
+        questions.iter().fold(Vec::new(), |mut acc, q| {
+            println!("{:?}", q);
+            let segments = q.name.split(".").collect::<Vec<&str>>();
+            for i in 0..segments.len() {
+                let size = segments[i].len() as u8;
+                acc.push(size);
+                let mut bytes = segments[i].as_bytes().to_vec();
+                acc.append(&mut bytes);
+
+                // if we are on the last element of the segment, push a 0 byte
+                // to denote the end of the name
+                if i >= segments.len() - 1 {
+                    acc.push(0x00);
+                }
+            }
+            let mut tb = q.qtype.to_be_bytes().to_vec();
+            acc.append(&mut tb);
+            let mut qb = q.qclass.to_be_bytes().to_vec();
+            acc.append(&mut qb);
+            println!("{:?}", std::str::from_utf8(&acc));
+            acc
+        })
     }
 }
