@@ -23,7 +23,7 @@ impl Service<Vec<u8>> for UdpService {
 
     fn call(&mut self, req: Vec<u8>) -> Self::Future {
         let msg = parser::Parser::parse(&req);
-        println!("{:?}", msg);
-        Box::pin(async { Ok(vec![0b0000_0000_0000_0000]) })
+        let res = parser::Parser::compose(msg);
+        Box::pin(async { Ok(res) })
     }
 }

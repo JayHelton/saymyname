@@ -33,7 +33,10 @@ impl Parser {
         DnsMessage { header, questions }
     }
 
-    pub fn compose() {
-        todo!("this needs to take the trait represented data and convert it back the properly formatted binary")
+    pub fn compose(msg: DnsMessage) -> Vec<u8> {
+        let mut composed = vec![];
+        let mut header = Header::compose(msg.header);
+        composed.append(&mut header);
+        composed
     }
 }

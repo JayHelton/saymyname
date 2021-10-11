@@ -4,14 +4,14 @@ use byteorder::{BigEndian, ByteOrder};
 #[derive(Debug)]
 pub struct Header {
     pub id: u16,
-    pub query: bool,
+    pub query: u16,
     pub opcode: u16,
-    pub authoritative: bool,
-    pub truncated: bool,
-    pub recursion_desired: bool,
-    pub recursion_available: bool,
-    pub authenticated_data: bool,
-    pub checking_disabled: bool,
+    pub authoritative: u16,
+    pub truncated: u16,
+    pub recursion_desired: u16,
+    pub recursion_available: u16,
+    pub authenticated_data: u16,
+    pub checking_disabled: u16,
     pub response_code: u16,
     pub question_count: u16,
     pub answer_count: u16,
@@ -41,19 +41,49 @@ impl Header {
         let flag_bytes = BigEndian::read_u16(&buf[2..4]);
         Header {
             id,
-            query: flag_bytes & flags::QUERY == 0,
+            query: flag_bytes & flags::QUERY,
             opcode: (flag_bytes & flags::OPCODE_MASK) >> flags::OPCODE_MASK.leading_zeros(),
-            authoritative: flag_bytes & flags::AUTHORITATIVE != 0,
-            truncated: flag_bytes & flags::TRUNCATED != 0,
-            recursion_desired: flag_bytes & flags::RECURSION_DESIRED != 0,
-            recursion_available: flag_bytes & flags::RECURSION_AVAILABLE != 0,
-            authenticated_data: flag_bytes & flags::AUTHENTICATED_DATA != 0,
-            checking_disabled: flag_bytes & flags::CHECKING_DISABLED != 0,
+            authoritative: flag_bytes & flags::AUTHORITATIVE,
+            truncated: flag_bytes & flags::TRUNCATED,
+            recursion_desired: flag_bytes & flags::RECURSION_DESIRED,
+            recursion_available: flag_bytes & flags::RECURSION_AVAILABLE,
+            authenticated_data: flag_bytes & flags::AUTHENTICATED_DATA,
+            checking_disabled: flag_bytes & flags::CHECKING_DISABLED,
             response_code: flag_bytes & flags::RESPONSE_CODE_MASK,
             question_count: BigEndian::read_u16(&buf[4..6]),
             answer_count: BigEndian::read_u16(&buf[6..8]),
             ns_count: BigEndian::read_u16(&buf[8..10]),
             additional_count: BigEndian::read_u16(&buf[10..12]),
         }
+    }
+
+    pub fn compose(header: Header) -> Vec<u8> {
+        // this probably could be more efficient with the owned data
+        // but oh well
+        let mut composed = vec![];
+        let mut id_b = header.id.to_be_bytes().to_vec();
+        composed.append(&mut id_b);
+        println!("{:?}", composed);
+        let mut buffer = 0u16;
+        buffer |= header.query;
+        buffer |= header.opcode << flags::OPCODE_MASK.leading_zeros();
+        buffer |= header.authoritative;
+        buffer |= header.truncated;
+        buffer |= header.recursion_desired;
+        buffer |= header.recursion_available;
+        buffer |= header.authenticated_data;
+        buffer |= header.checking_disabled;
+        buffer |= header.response_code;
+        let mut flag_bytes = buffer.to_be_bytes().to_vec();
+        composed.append(&mut flag_bytes);
+        let mut qc_b = header.question_count.to_be_bytes().to_vec();
+        composed.append(&mut qc_b);
+        let mut ac_b = header.answer_count.to_be_bytes().to_vec();
+        composed.append(&mut ac_b);
+        let mut ns_b = header.ns_count.to_be_bytes().to_vec();
+        composed.append(&mut ns_b);
+        let mut a_b = header.additional_count.to_be_bytes().to_vec();
+        composed.append(&mut a_b);
+        composed
     }
 }
